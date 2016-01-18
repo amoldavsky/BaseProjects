@@ -1,2 +1,1 @@
-# SpringCXFBaseProject
-Spring 4 + CXF 3 base project
+# Spring Base Projects
