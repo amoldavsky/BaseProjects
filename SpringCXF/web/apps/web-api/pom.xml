@@ -213,6 +213,12 @@
 			<version>${apache.cxf.version}</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+	        <groupId>org.apache.cxf</groupId>
+	        <artifactId>cxf-rt-transports-http-jetty</artifactId>
+	        <version>${apache.cxf.version}</version>
+			<scope>test</scope>
+    	</dependency>
         
 	</dependencies>
 

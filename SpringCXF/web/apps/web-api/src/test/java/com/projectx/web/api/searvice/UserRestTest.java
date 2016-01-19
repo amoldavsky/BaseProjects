@@ -1,7 +1,9 @@
 package com.projectx.web.api.searvice;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Random;
 
 import javax.ws.rs.ext.RuntimeDelegate;
 
@@ -11,17 +13,23 @@ import org.apache.cxf.jaxrs.JAXRSServerFactoryBean;
 import org.apache.cxf.transport.local.LocalConduit;
 import org.apache.cxf.jaxrs.client.WebClient;
 
+import static org.junit.Assert.*;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.modules.junit4.PowerMockRunnerDelegate;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.projectx.logic.api.service.UserService;
 import com.projectx.logic.api.service.impl.UserServiceImpl;
@@ -31,6 +39,7 @@ import com.projectx.web.api.service.impl.UserRestImpl;
 import com.projectx.web.api.test.config.spring.AppTestConfig;
 import com.projectx.web.api.test.config.spring.ConfigTestUtils;
 import com.projetx.sdk.user.User;
+import com.projetx.sdk.user.impl.BasicUser;
 
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,17 +69,16 @@ import org.springframework.test.context.web.WebTestContextBootstrapper;
 		loader = AnnotationConfigContextLoader.class,
 		classes = { UserRestTest.class, AppTestConfig.class }
 )
+@PowerMockIgnore( {"javax.management.*"}) 
 @WebAppConfiguration
 //@BootstrapWith(WebTestContextBootstrapper.class)
 public class UserRestTest extends BaseTest implements ApplicationContextAware {
 	
-	/*
-	@Autowired
-	WebApplicationContext ctx;
-	*/
-	
 	//@Autowired
 	UserService userService;
+	
+	@Autowired
+	Server jaxRsServer;
 	
 	@Autowired @Qualifier("ConfigUTesttils")
 	ConfigTestUtils configUtil;
@@ -88,38 +96,6 @@ public class UserRestTest extends BaseTest implements ApplicationContextAware {
 	public ApplicationContext applicationContext() {
 		return this.applicationContext;
 	}
-	
-	private Server jaxRsServer() {
-		JAXRSServerFactoryBean sf = new JAXRSServerFactoryBean();
-	     //sf.setResourceClasses( MyJaxrsResource.class );
-	     
-	     List<Object> providers = new ArrayList<Object>();
-	     // add custom providers if any
-	     sf.setProviders(providers);
-        
-        //factory.setServiceBean(new DenialCategoryRest());
-        
-		// get all the class annotated with @JaxrsService
-        List<Object> beans = configUtil.findBeans( JaxrsService.class );
-        //List<Class> beansClasses = configUtil.findClasses( JaxrsService.class );
-
-		if (beans.size() > 0) {
-			
-			// add all the CXF service classes into the CXF stack
-			sf.setResourceClasses( UserRestImpl.class );
-			sf.setServiceBeans( beans );
-			sf.setAddress( "/api" );
-			//sf.setBus( springBus );
-			sf.setStart(true);
-			
-			// set JSON as the response serializer
-			JacksonJsonProvider provider = new JacksonJsonProvider();
-			sf.setProvider( provider );
-	        
-		}
-        
-		return sf.create();
-    }
 	
 	@Before
 	public void setUp() throws Exception {
@@ -152,26 +128,71 @@ public class UserRestTest extends BaseTest implements ApplicationContextAware {
 	@Test
 	public void testGettersSetters() {
 		
-		Mockito.doReturn( null ).when( userService ).getUser( 11 );
-		System.out.println( "assaf01:" + userRestRS.getUser( 11 ) );
 		
-		Server server = jaxRsServer();
 		
-		WebClient client = WebClient.create( "http://localhost:8080/api" );
-		WebClient.getConfig(client).getRequestContext().put(LocalConduit.DIRECT_DISPATCH, Boolean.TRUE);
-
-		client.accept( "application/json" );
-		client.path("/user/11");
-		User user = client.get( User.class );
-		//assertEquals(123L, book.getId());
-		
-	}
-	/*
-	@Test
-	public void testGetUser() {
-
 	}
 	
+	@Test
+	public void testGetUserValid() {
+		Mockito.doReturn( null ).when( userService ).getUser( 11 );
+		
+		Integer testUserId = 1;
+		
+		Server server = this.jaxRsServer;
+		
+		WebClient client = WebClient.create( "http://localhost:8080/api" );
+		WebClient.getConfig(client).getRequestContext().put( LocalConduit.DIRECT_DISPATCH, Boolean.TRUE );
+		client.accept( "application/json" );
+		
+		client.path( "/user/" + testUserId );
+		
+		User reponseUser = null;
+		
+		try {
+
+			String response = client.get( String.class );
+			reponseUser = (new ObjectMapper()).readValue( response, BasicUser.class );
+			
+		} catch( Exception e ) {
+			
+			e.printStackTrace();
+			
+		}
+		
+		assertEquals( reponseUser.getId(), testUserId );
+	}
+	
+	@Test
+	public void testGetUserInvalid() {
+		Mockito.doReturn( null ).when( userService ).getUser( 11 );
+		
+		Integer testUserId = -1;
+		
+		Server server = this.jaxRsServer;
+		
+		WebClient client = WebClient.create( "http://localhost:8080/api" );
+		WebClient.getConfig(client).getRequestContext().put( LocalConduit.DIRECT_DISPATCH, Boolean.TRUE );
+		client.accept( "application/json" );
+		
+		client.path( "/user/" + testUserId );
+		
+		User reponseUser = null;
+		
+		try {
+
+			String response = client.get( String.class );
+			reponseUser = (new ObjectMapper()).readValue( response, BasicUser.class );
+			
+		} catch( Exception e ) {
+			
+			e.printStackTrace();
+			
+		}
+		
+		assertEquals( reponseUser.getId(), testUserId );
+	}
+	
+	/*
 	@Test
 	public void testCreateUser() {
 
@@ -197,4 +218,18 @@ public class UserRestTest extends BaseTest implements ApplicationContextAware {
 
 	}
 	*/
+	
+	private User createDummyUser() {
+		
+		// create a dummy user object
+		User user = new com.projectx.logic.api.data.User();
+		user.setId( (new Random()).nextInt() );
+		user.setFirstName( "James" );
+		user.setLastName( "Bond" );
+		user.setPassword( "007" );
+		user.setEmail( "james.bond@testing.com" );
+		user.setDateCreated( new Date() );
+		
+		return user;
+	}
 }

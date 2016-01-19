@@ -1,12 +1,16 @@
 package com.projectx.web.api.test.config.spring;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.ext.RuntimeDelegate;
 
+import org.apache.cxf.Bus;
+import org.apache.cxf.BusFactory;
 import org.apache.cxf.bus.spring.SpringBus;
+import org.apache.cxf.bus.spring.SpringBusFactory;
 import org.apache.cxf.endpoint.Server;
 import org.apache.cxf.jaxrs.JAXRSServerFactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,15 +22,16 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.projectx.web.api.service.JaxrsService;
+import com.projectx.web.api.service.impl.UserRestImpl;
 
 @Configuration
 @EnableTransactionManagement
 public class CxfTestConfig {
 
-public static final String CXF_SERVICES_BASE_PACKAGE = "com.projectx.web.api.service";
+	public static final String CXF_SERVICES_BASE_PACKAGE = "com.projectx.web.api.service";
 	
-	@Autowired
-	private SpringBus springBus;
+	private Bus springBus;
+	
 	@Autowired
 	private ConfigTestUtils configUtil;
 	
@@ -49,36 +54,51 @@ public static final String CXF_SERVICES_BASE_PACKAGE = "com.projectx.web.api.ser
     }
 
     @Bean(destroyMethod = "shutdown")
-    public SpringBus cxf() {
-    	System.out.println( "CxfTestConfig: cxf bean" );
-        return new SpringBus();
+    public Bus cxf() {
+    	
+    	SpringBusFactory factory = new SpringBusFactory();
+    	springBus = factory.createBus();
+        BusFactory.setDefaultBus( springBus );
+        
+        return springBus;
+    	
+    	//System.out.println( "CxfTestConfig: cxf bean" );
+        //return new SpringBus();
     }
-    /*
+    
     @Bean
     @DependsOn("cxf")
     public Server jaxRsServer() {
-        JAXRSServerFactoryBean serverFactory = RuntimeDelegate.getInstance().createEndpoint(jaxRsApiApplication(), JAXRSServerFactoryBean.class);
-        
-        //factory.setServiceBean(new DenialCategoryRest());
-        
+		JAXRSServerFactoryBean sf = new JAXRSServerFactoryBean();
+		// sf.setResourceClasses( MyJaxrsResource.class );
+
+		List<Object> providers = new ArrayList<Object>();
+		// add custom providers if any
+		sf.setProviders(providers);
+
+		// factory.setServiceBean(new DenialCategoryRest());
+
 		// get all the class annotated with @JaxrsService
-        List<Object> beans = configUtil.findBeans( JaxrsService.class );
+		List<Object> beans = configUtil.findBeans(JaxrsService.class);
+		// List<Class> beansClasses = configUtil.findClasses( JaxrsService.class
+		// );
 
 		if (beans.size() > 0) {
-			
+
 			// add all the CXF service classes into the CXF stack
-			serverFactory.setServiceBeans( beans );
-			serverFactory.setAddress("/"+ serverFactory.getAddress());
-			serverFactory.setBus(springBus);
-			serverFactory.setStart(true);
-			
+			//sf.setResourceClasses(UserRestImpl.class);
+			sf.setServiceBeans(beans);
+			sf.setAddress("http://localhost:8080/api");
+			sf.setBus(springBus);
+			sf.setStart(true);
+
 			// set JSON as the response serializer
 			JacksonJsonProvider provider = new JacksonJsonProvider();
-			serverFactory.setProvider(provider);
-	        
+			sf.setProvider(provider);
+
 		}
-        
-		return serverFactory.create();
+
+		return sf.create();
     }
-	*/
+	
 }
