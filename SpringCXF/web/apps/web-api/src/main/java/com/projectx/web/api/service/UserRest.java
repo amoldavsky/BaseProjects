@@ -31,8 +31,7 @@ public interface UserRest {
 	@GET
 	@Produces("application/json")
 	public User getUser(
-			// TODO: convert to accept String and convert to integer internally
-			@PathParam("userId") Integer userId
+			@PathParam("userId") String userId
 	);
 	
 	@Path("/user")

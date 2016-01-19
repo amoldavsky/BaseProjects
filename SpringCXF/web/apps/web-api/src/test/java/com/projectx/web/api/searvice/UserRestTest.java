@@ -132,13 +132,16 @@ public class UserRestTest extends BaseTest implements ApplicationContextAware {
 		
 	}
 	
+	/**
+	 * Tests the the /user/id endpoint for a valid id
+	 */
 	@Test
-	public void testGetUserValid() {
+	public void testGetUserValidId() {
 		Mockito.doReturn( null ).when( userService ).getUser( 11 );
 		
 		Integer testUserId = 1;
 		
-		Server server = this.jaxRsServer;
+		//Server server = this.jaxRsServer;
 		
 		WebClient client = WebClient.create( "http://localhost:8080/api" );
 		WebClient.getConfig(client).getRequestContext().put( LocalConduit.DIRECT_DISPATCH, Boolean.TRUE );
@@ -162,21 +165,22 @@ public class UserRestTest extends BaseTest implements ApplicationContextAware {
 		assertEquals( reponseUser.getId(), testUserId );
 	}
 	
+	/**
+	 * Tests the the /user/id endpoint for a negative id
+	 */
 	@Test
-	public void testGetUserInvalid() {
+	public void testGetUserInvalidIdNegative() {
 		Mockito.doReturn( null ).when( userService ).getUser( 11 );
-		
-		Integer testUserId = -1;
-		
-		Server server = this.jaxRsServer;
 		
 		WebClient client = WebClient.create( "http://localhost:8080/api" );
 		WebClient.getConfig(client).getRequestContext().put( LocalConduit.DIRECT_DISPATCH, Boolean.TRUE );
 		client.accept( "application/json" );
-		
-		client.path( "/user/" + testUserId );
-		
+
 		User reponseUser = null;
+		
+		// test for a negative int 
+		Integer testUserId = -1;
+		client.path( "/user/" + testUserId );
 		
 		try {
 
@@ -185,11 +189,47 @@ public class UserRestTest extends BaseTest implements ApplicationContextAware {
 			
 		} catch( Exception e ) {
 			
-			e.printStackTrace();
+			//e.printStackTrace();
+			assertTrue( true );
+			return;
 			
 		}
 		
-		assertEquals( reponseUser.getId(), testUserId );
+		fail( "was able to call /user/" + testUserId );
+		
+	}
+	
+	/**
+	 * Tests the the /user/id endpoint for an alphanumeric id
+	 */
+	@Test
+	public void testGetUserInvalidIdAlphanumeric() {
+		
+		WebClient client = WebClient.create( "http://localhost:8080/api" );
+		WebClient.getConfig(client).getRequestContext().put( LocalConduit.DIRECT_DISPATCH, Boolean.TRUE );
+		client.accept( "application/json" );
+		
+		User reponseUser = null;
+		
+		// test a latter in the id
+		String badUserId = "123abc";
+		client.path( "/user/" + badUserId );
+		
+		try {
+
+			String response = client.get( String.class );
+			reponseUser = (new ObjectMapper()).readValue( response, BasicUser.class );
+			
+		} catch( Exception e ) {
+			
+			//e.printStackTrace();
+			assertTrue( true );
+			return;
+			
+		}
+		
+		fail( "was able to call /user/" + badUserId );
+		
 	}
 	
 	/*

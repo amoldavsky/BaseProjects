@@ -26,7 +26,24 @@ public class UserRestImpl implements UserRest {
 	UserService userService;
 	
 	@Override
-	public User getUser( Integer userId ) {
+	public User getUser( String userIdParam ) {
+		
+		Integer userId = null;
+		
+		try {
+			
+			userId = Integer.valueOf( userIdParam );
+			
+		} catch( NumberFormatException nee ) {
+			
+			// do nothing for now
+			
+		}
+		
+		if( userId == null || userId <= 0 ) {
+			return null;
+		}
+		
 		return userService.getUser( userId );
 	}
 	
